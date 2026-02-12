@@ -1,0 +1,153 @@
+﻿﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>前灵镜</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <canvas id="fogCanvas"></canvas>
+  <div id="customCursor" aria-hidden="true"></div>
+  
+  <!-- 开场动画 -->
+  <div id="introOverlay">
+    <div class="intro-content">
+      <h1 class="intro-title">前灵镜</h1>
+    </div>
+    <div class="intro-dialog" id="introDialog">这里是何处？</div>
+    <div class="interaction-point" id="interactionPoint"></div>
+    <div class="interaction-text" id="interactionText">点击探索前灵镜</div>
+  </div>
+  
+  <div id="mainContent" class="hidden">
+    <div class="container">
+      <header>
+        <h1>前灵镜</h1>
+        <p>沉睡的记忆，在此虚无缥缈</p>
+      </header>
+      
+      <div class="controls">
+        <button class="add-memory-btn" onclick="openModal('add')">
+          <span class="plus-icon">+</span>
+        </button>
+      </div>
+      
+      <div class="timeline-container" id="timelineContainer">
+        <div class="timeline-line"></div>
+        <div class="timeline-scroll" id="timelineScroll">
+          <div class="memories-grid" id="memoriesGrid">
+            <div class="empty-state" id="emptyState">
+              <div class="icon">✦</div>
+              <p>前灵境内暂无记忆碎片</p>
+            </div>
+          </div>
+        </div>
+        <div class="time-indicator" id="timeIndicator">
+          <div class="time-label" id="timeLabel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal" id="memoryModal">
+    <div class="modal-content">
+      <span class="modal-close" onclick="closeModal()">&times;</span>
+      <h2 id="modalTitle">存入记忆</h2>
+      <form id="memoryForm">
+        <input type="hidden" id="memoryId">
+        <div class="form-group">
+          <label for="memoryTitle">记忆标题</label>
+          <input type="text" id="memoryTitle" placeholder="给这个记忆起一个名字.." required>
+        </div>
+        <div class="form-group">
+          <label for="memoryImage">记忆图片</label>
+          <input type="file" id="memoryImage" accept="image/*">
+          <div class="image-preview" id="imagePreview"></div>
+        </div>
+        <div class="form-group">
+          <label for="memoryContent">记忆内容（支持Markdown）</label>
+          <textarea id="memoryContent" placeholder="将你的记忆书写于此.." required></textarea>
+        </div>
+        <div class="form-group">
+          <label for="memoryDate">记忆时间</label>
+          <input type="datetime-local" id="memoryDate">
+        </div>
+        <div class="form-group">
+                    <label for="memoryEmotion">情感</label>
+          <select id="memoryEmotion"></select>
+        </div>
+        <div class="form-group">
+          <label>记忆专属播放列表</label>
+          <div class="playlist-editor compact">
+            <div class="playlist-column">
+              <div class="playlist-label">可用音乐</div>
+              <select id="availableMusicList" size="6"></select>
+            </div>
+            <div class="playlist-buttons">
+              <button type="button" class="audio-btn" onclick="addToMemoryPlaylist()">添加 →</button>
+              <button type="button" class="audio-btn" onclick="removeFromMemoryPlaylist()">← 删除</button>
+              <button type="button" class="audio-btn" onclick="moveMemoryTrackUp()">上移</button>
+              <button type="button" class="audio-btn" onclick="moveMemoryTrackDown()">下移</button>
+            </div>
+            <div class="playlist-column">
+              <div class="playlist-label">播放顺序</div>
+              <select id="memoryPlaylistList" size="6"></select>
+            </div>
+          </div>
+          <div class="playlist-tip">阅读该记忆时会优先播放专属背景音乐，按这里的顺序播放。</div>
+        </div>
+        <div class="form-group">
+          <button type="submit" class="btn" style="width: 100%;">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <div class="modal" id="viewModal">
+    <div class="modal-content view-content">
+      <span class="modal-close" onclick="closeViewModal()">&times;</span>
+      <div id="viewContent"></div>
+    </div>
+  </div>
+  
+  <!-- 音频控制 -->
+  <div class="audio-controls">
+    <div class="audio-icon" onclick="toggleAudioControls()">🎵</div>
+    <div class="audio-panel" id="audioPanel">
+      <div class="audio-slider">
+        <label for="volumeSlider">音量</label>
+        <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.3">
+      </div>
+      <button class="audio-btn" onclick="nextTrack()">下一曲</button>
+      <button class="audio-btn" onclick="togglePlayPause()">播放/暂停</button>
+      <div class="playlist-editor">
+        <div class="playlist-column">
+          <div class="playlist-label">音乐库</div>
+          <select id="globalAvailableMusicList" size="6"></select>
+        </div>
+        <div class="playlist-buttons">
+          <button type="button" class="audio-btn" onclick="addToGlobalPlaylist()">添加 →</button>
+          <button type="button" class="audio-btn" onclick="removeFromGlobalPlaylist()">← 删除</button>
+          <button type="button" class="audio-btn" onclick="moveGlobalTrackUp()">上移</button>
+          <button type="button" class="audio-btn" onclick="moveGlobalTrackDown()">下移</button>
+          <button type="button" class="audio-btn" onclick="saveGlobalPlaylist()">保存列表</button>
+        </div>
+        <div class="playlist-column">
+          <div class="playlist-label">前灵镜播放列表</div>
+          <select id="globalPlaylistList" size="6"></select>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 音频元素 -->
+  <audio id="backgroundMusic" preload="auto"></audio>
+  
+  <script src="https://cdn.jsdelivr.net/npm/marked@9.1.6/marked.min.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>
